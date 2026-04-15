@@ -55,23 +55,27 @@ Depois é só logar com:
 
 ## Estrutura
 
+```
 ├── backend/
-│ └── src/
-│ ├── controllers/ # Entrada da requisição, delega pra o service
-│ ├── services/ # Regras de negócio
-│ ├── repositories/ # Queries ao MongoDB
-│ ├── models/ # Schemas Mongoose
-│ ├── middlewares/ # Autenticação JWT e tratamento de erros
-│ ├── routes/ # Rotas centralizadas
-│ └── utils/ # Helpers
+│   └── src/
+│       ├── config/         # Conexão com o banco
+│       ├── controllers/    # Entrada da requisição, delega pro service
+│       ├── services/       # Regras de negócio
+│       ├── repositories/   # Queries ao MongoDB
+│       ├── models/         # Schemas Mongoose
+│       ├── middlewares/     # Autenticação JWT e tratamento de erros
+│       ├── routes/         # Rotas centralizadas
+│       └── utils/          # Helpers
 │
 ├── frontend/
-│ └── src/
-│ ├── app/ # Páginas via App Router
-│ ├── components/ # Componentes reutilizáveis
-│ ├── hooks/ # Custom hooks (auth)
-│ ├── services/ # Axios configurado
-│ └── lib/ # Utilitários
+│   └── src/
+│       ├── app/            # Páginas via App Router
+│       ├── components/     # Componentes reutilizáveis
+│       ├── hooks/          # Custom hooks (auth)
+│       ├── services/       # Axios configurado
+│       ├── types/          # Interfaces TypeScript
+│       └── lib/            # Utilitários
+```
 
 ## Endpoints
 
