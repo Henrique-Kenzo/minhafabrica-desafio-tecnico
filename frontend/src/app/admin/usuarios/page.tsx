@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
-import { Edit2, Plus, Trash2 } from 'lucide-react';
+import { Edit2, Plus, Trash2, Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 
 import { User } from '@/types';
@@ -17,11 +17,27 @@ export default function UsersPage() {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [editingUser, setEditingUser] = React.useState<User | null>(null);
 
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const [totalPages, setTotalPages] = React.useState(1);
+  const [totalItems, setTotalItems] = React.useState(0);
+
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [profileFilter, setProfileFilter] = React.useState('');
+
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      const res = await api.get('/users');
+      const qs = new URLSearchParams();
+      if (searchTerm) qs.append('search', searchTerm);
+      if (profileFilter) qs.append('profile', profileFilter);
+      qs.append('page', currentPage.toString());
+      qs.append('limit', '15');
+      
+      const res = await api.get(`/users?${qs.toString()}`);
       setUsers(res.data.data);
+      const calculatedPages = Math.ceil((res.data.total || 0) / 15);
+      setTotalPages(calculatedPages > 0 ? calculatedPages : 1);
+      setTotalItems(res.data.total || 0);
     } catch {
       toast.error('Erro ao carregar usuários');
     } finally {
@@ -30,8 +46,29 @@ export default function UsersPage() {
   };
 
   React.useEffect(() => {
-    fetchUsers();
-  }, []);
+    setCurrentPage(1);
+  }, [searchTerm, profileFilter]);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchUsers();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm, profileFilter, currentPage]);
+
+  const getVisiblePages = () => {
+    const pages = [];
+    let start = Math.max(1, currentPage - 2);
+    let end = Math.min(totalPages, currentPage + 2);
+    
+    if (currentPage <= 3) end = Math.min(totalPages, 5);
+    if (currentPage >= totalPages - 2) start = Math.max(1, totalPages - 4);
+    
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    return pages;
+  };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Deseja realmente excluir este usuário?')) return;
@@ -88,7 +125,33 @@ export default function UsersPage() {
         </Button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200">
+      <div className="flex flex-col sm:flex-row gap-3 mt-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input 
+            placeholder="Buscar por nome ou e-mail..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <div className="relative w-full sm:w-64">
+          <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input 
+            placeholder="Filtrar por perfil (admin/user)..." 
+            value={profileFilter}
+            onChange={(e) => setProfileFilter(e.target.value)}
+            className="pl-9"
+            list="profile-suggestions"
+          />
+          <datalist id="profile-suggestions">
+            <option value="admin" />
+            <option value="user" />
+          </datalist>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col min-h-[500px]">
         <Table>
           <TableHeader>
             <TableRow>
@@ -136,6 +199,44 @@ export default function UsersPage() {
             )}
           </TableBody>
         </Table>
+
+        {/* Pagination Footer */}
+        <div className="flex items-center justify-between border-t border-slate-200 bg-white px-4 py-3 sm:px-6 rounded-b-xl mt-auto">
+          <div className="flex flex-1 justify-between sm:hidden">
+            <Button variant="outline" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1 || isLoading}>Anterior</Button>
+            <Button variant="outline" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || isLoading}>Próxima</Button>
+          </div>
+          <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-slate-700">
+                Mostrando <span className="font-medium">{totalItems === 0 ? 0 : (currentPage - 1) * 15 + 1}</span> a <span className="font-medium">{Math.min(currentPage * 15, totalItems)}</span> de <span className="font-medium">{totalItems}</span> usuários
+              </p>
+            </div>
+            <div>
+              <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm gap-1" aria-label="Pagination">
+                <Button variant="outline" className="w-10 h-10 p-0" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1 || isLoading}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                
+                {getVisiblePages().map(p => (
+                  <Button 
+                    key={p} 
+                    variant={currentPage === p ? 'default' : 'outline'} 
+                    className={`w-10 h-10 p-0 ${currentPage === p ? 'ring-2 ring-blue-500 ring-offset-1' : ''}`}
+                    onClick={() => setCurrentPage(p)}
+                    disabled={isLoading}
+                  >
+                    {p}
+                  </Button>
+                ))}
+
+                <Button variant="outline" className="w-10 h-10 p-0" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || isLoading}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </nav>
+            </div>
+          </div>
+        </div>
       </div>
 
       <Modal isOpen={isModalOpen} onClose={handleCloseModal} title={editingUser ? 'Editar Usuário' : 'Novo Usuário'}>

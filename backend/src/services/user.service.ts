@@ -10,8 +10,17 @@ export interface CreateUserDTO {
 export class UserService {
   constructor(private readonly userRepo: UserRepository) {}
 
-  async findAll(page = 1, limit = 10) {
-    return this.userRepo.findAll(page, limit);
+  async findAll(page = 1, limit = 10, search?: string, profile?: string) {
+    const filter: any = {};
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } }
+      ];
+    }
+    if (profile) filter.profile = profile;
+
+    return this.userRepo.findAll(page, limit, filter);
   }
 
   async create(data: CreateUserDTO): Promise<Omit<IUser, 'password'>> {

@@ -1,9 +1,9 @@
 import { IUser, UserModel } from '../models/user.model';
 
 export class UserRepository {
-  async findAll(page = 1, limit = 10): Promise<{ data: IUser[], total: number }> {
-    const data = await UserModel.find().skip((page - 1) * limit).limit(limit).lean() as IUser[];
-    const total = await UserModel.countDocuments();
+  async findAll(page = 1, limit = 10, filter: object = {}): Promise<{ data: IUser[], total: number }> {
+    const data = await UserModel.find(filter).select('-password').skip((page - 1) * limit).limit(limit).lean() as IUser[];
+    const total = await UserModel.countDocuments(filter);
     return { data, total };
   }
 

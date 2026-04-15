@@ -7,8 +7,10 @@ const userService = new UserService(new UserRepository());
 
 export const findAllUsers = asyncHandler(async (req: Request, res: Response) => {
   const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 10;
-  const result = await userService.findAll(page, limit);
+  const limit = parseInt(req.query.limit as string) || 15;
+  const search = req.query.search as string;
+  const profile = req.query.profile as string;
+  const result = await userService.findAll(page, limit, search, profile);
   res.json(result);
 });
 
