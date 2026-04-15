@@ -9,8 +9,15 @@ export interface CreateProductDTO {
 export class ProductService {
   constructor(private readonly productRepo: ProductRepository) {}
 
-  async findAll(page = 1, limit = 10) {
-    return this.productRepo.findAll(page, limit);
+  async findAll(page = 1, limit = 10, search?: string, category?: string) {
+    const filter: any = {};
+    if (search) filter.name = { $regex: search, $options: 'i' };
+    if (category) filter.category = category;
+    return this.productRepo.findAll(page, limit, filter);
+  }
+
+  async getCategories(): Promise<string[]> {
+    return this.productRepo.getCategories();
   }
 
   async create(data: CreateProductDTO): Promise<IProduct> {

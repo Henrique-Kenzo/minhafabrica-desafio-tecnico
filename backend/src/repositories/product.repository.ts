@@ -1,14 +1,18 @@
 import { IProduct, ProductModel } from '../models/product.model';
 
 export class ProductRepository {
-  async findAll(page = 1, limit = 10): Promise<{ data: IProduct[], total: number }> {
-    const data = await ProductModel.find().skip((page - 1) * limit).limit(limit).lean() as IProduct[];
-    const total = await ProductModel.countDocuments();
+  async findAll(page = 1, limit = 10, filter: object = {}): Promise<{ data: IProduct[], total: number }> {
+    const data = await ProductModel.find(filter).skip((page - 1) * limit).limit(limit).lean() as IProduct[];
+    const total = await ProductModel.countDocuments(filter);
     return { data, total };
   }
 
   async findById(id: string): Promise<IProduct | null> {
     return ProductModel.findById(id).lean() as Promise<IProduct | null>;
+  }
+
+  async getCategories(): Promise<string[]> {
+    return ProductModel.distinct('category');
   }
 
   async create(data: Partial<IProduct>): Promise<IProduct> {

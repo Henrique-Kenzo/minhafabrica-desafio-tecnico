@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
 import 'dotenv/config';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -11,7 +12,9 @@ import { globalErrorHandler } from './middlewares/error.middleware';
 const app = express();
 
 // middlewares de seguranca
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 
 // rate limit para evitar brute force
 const apiLimiter = rateLimit({
@@ -25,6 +28,8 @@ app.use('/api/v1/', apiLimiter);
 
 // habilitando cors
 app.use(cors({ origin: process.env.FRONTEND_URL || '*' }));
+
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 
 // limitando tamanho do body
 app.use(express.json({ limit: '10kb' }));

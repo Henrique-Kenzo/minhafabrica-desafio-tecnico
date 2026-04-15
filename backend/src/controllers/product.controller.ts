@@ -8,7 +8,14 @@ const productService = new ProductService(new ProductRepository());
 export const findAllProducts = asyncHandler(async (req: Request, res: Response) => {
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 50;
-  const result = await productService.findAll(page, limit);
+  const search = req.query.search as string;
+  const category = req.query.category as string;
+  const result = await productService.findAll(page, limit, search, category);
+  res.json(result);
+});
+
+export const getCategories = asyncHandler(async (_req: Request, res: Response) => {
+  const result = await productService.getCategories();
   res.json(result);
 });
 

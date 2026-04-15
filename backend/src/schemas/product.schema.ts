@@ -6,6 +6,7 @@ export const createProductSchema = z.object({
   price: z.number().min(0, 'O preço não pode ser negativo.'),
   stock: z.number().int('Estoque deve ser inteiro.').min(0, 'Estoque não pode ser negativo.'),
   category: z.string().min(1, 'Categoria é obrigatória.'),
+  imageUrl: z.string().optional().or(z.literal('')),
 });
 
 export const updateProductSchema = z.object({
@@ -14,4 +15,5 @@ export const updateProductSchema = z.object({
   price: z.number().min(0, 'O preço não pode ser negativo.').optional(),
   stock: z.number().int('Estoque deve ser inteiro.').min(0, 'Estoque não pode ser negativo.').optional(),
   category: z.string().optional(),
+  imageUrl: z.string().optional(),
 });
