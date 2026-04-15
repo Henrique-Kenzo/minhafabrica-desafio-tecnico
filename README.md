@@ -61,6 +61,12 @@ Gosto profundamente dessa separação porque deixa o código maduro:
 
 Isso facilita a criação de testes de unidade e poupa muitas horas de dor de cabeça caso precisemos escalar o projeto no futuro.
 
+### 🛡️ Decisões Técnicas de Nível Sênior Adicionadas:
+Para provar que a aplicação não apenas funciona, mas foi blindada de forma profissional, apliquei conceitos que fogem do "CRUD padrão":
+* **Blindagem de Middlewares no Frontend:** Em vez de travar a renderização para checar *localStorage* resultando num feio "flicker" de loading, adotei a abordagem Edge no Next.js usando o `middleware.ts`. Rotas privadas não renderizam sequer o layout sem a presença do JWT nos *Cookies*.
+* **Validação Estrita via Schemas (API):** Protegi agressivamente a borda do Backend com a adoção do **Zod**. Payloads com tipagem injetada barram qualquer tentativa de bypass no banco.
+* **Tratamento Fino de Retornos do Database:** Refatorei o Error Handler global do Express para entender mensagens específicas do Mongoose. `CastErrors` injetados enviam `HTTP 400 - ID formato inválido` e chaves duplicadas (e-mails conflitantes 11000) batem limpo num `HTTP 409 - Conflito de dados`, sem vazar as entranhas do erro 500 no console.
+
 ---
 
 ## 💻 Para Rodar Localmente
