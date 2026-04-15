@@ -1,15 +1,39 @@
 import express from 'express';
 import cors from 'cors';
-import 'dotenv/config'; 
+import 'dotenv/config';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+
+
 import apiRoutes from './routes/index';
 import { globalErrorHandler } from './middlewares/error.middleware';
+
 const app = express();
 
-app.use(cors({ origin: process.env.FRONTEND_URL || '*' }));
-app.use(express.json());
+// middlewares de seguranca
+app.use(helmet());
 
+// rate limit para evitar brute force
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 150,
+  message: { message: 'Too many requests, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/v1/', apiLimiter);
+
+// habilitando cors
+app.use(cors({ origin: process.env.FRONTEND_URL || '*' }));
+
+// limitando tamanho do body
+app.use(express.json({ limit: '10kb' }));
+
+
+// rotas principais
 app.use('/api/v1', apiRoutes);
 
-app.use(globalErrorHandler); 
+// handler global de erros
+app.use(globalErrorHandler);
 
 export default app;

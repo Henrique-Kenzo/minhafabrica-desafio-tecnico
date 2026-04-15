@@ -1,13 +1,13 @@
 import { Request, Response, NextFunction, ErrorRequestHandler } from 'express';
+import { AppError } from '../utils/AppError';
 
 export const globalErrorHandler: ErrorRequestHandler = (
-  err: Error, req: Request, res: Response, next: NextFunction
+  err: Error, _req: Request, res: Response, _next: NextFunction
 ) => {
   console.error(`[ERROR] ${err.message}`);
-  
-  // Tratamos o res.status para o Typescript permitir optional chaining neste caso manual
-  const status = (err as any).statusCode || 500;
-  
-  // As respostas sempre vêm no formato { "message": "..." } conforme exigido pelo exercício
-  res.status(status).json({ message: err.message || 'Erro interno do servidor' });
+
+  // pega o status correto do AppError ou joga 500 como fallback
+  const statusCode = err instanceof AppError ? err.statusCode : 500;
+
+  res.status(statusCode).json({ message: err.message || 'Erro interno do servidor' });
 };

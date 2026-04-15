@@ -1,18 +1,12 @@
 import { Request, Response } from 'express';
+import { DashboardService } from '../services/dashboard.service';
 import { UserRepository } from '../repositories/user.repository';
 import { ProductRepository } from '../repositories/product.repository';
+import { asyncHandler } from '../utils/asyncHandler';
 
-const userRepo = new UserRepository();
-const productRepo = new ProductRepository();
+const dashboardService = new DashboardService(new UserRepository(), new ProductRepository());
 
-export const getDashboard = async (_req: Request, res: Response): Promise<void> => {
-  try {
-    const [totalUsers, totalProducts] = await Promise.all([
-      userRepo.count(),
-      productRepo.count(),
-    ]);
-    res.json({ totalUsers, totalProducts });
-  } catch (err: any) {
-     res.status(500).json({ message: err.message });
-  }
-};
+export const getDashboard = asyncHandler(async (_req: Request, res: Response) => {
+  const result = await dashboardService.getCounters();
+  res.json(result);
+});

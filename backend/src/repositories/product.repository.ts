@@ -7,9 +7,21 @@ export class ProductRepository {
     return { data, total };
   }
 
+  async findById(id: string): Promise<IProduct | null> {
+    return ProductModel.findById(id).lean() as Promise<IProduct | null>;
+  }
+
   async create(data: Partial<IProduct>): Promise<IProduct> {
     const product = new ProductModel(data);
     return product.save();
+  }
+
+  async update(id: string, data: Partial<IProduct>): Promise<IProduct | null> {
+    return ProductModel.findByIdAndUpdate(id, data, { new: true }).lean() as Promise<IProduct | null>;
+  }
+
+  async delete(id: string): Promise<IProduct | null> {
+    return ProductModel.findByIdAndDelete(id).lean() as Promise<IProduct | null>;
   }
 
   async count(): Promise<number> {
