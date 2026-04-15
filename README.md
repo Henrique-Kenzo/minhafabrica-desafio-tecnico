@@ -1,102 +1,94 @@
-# Desafio Técnico — MinhaFabrica
+# 🏭 MinhaFabrica — Desafio Técnico
 
-Esse repositório é a minha entrega para o desafio técnico do processo seletivo da MinhaFabrica.
+> *"Uma solução fullstack focada em arquitetura limpa, segurança e experiência do usuário."*
 
-A proposta era construir um painel administrativo fullstack com gestão de usuários e produtos, então é exatamente isso que você vai encontrar aqui: uma API REST no backend e uma interface web no frontend, com autenticação via JWT e um CRUD completo para as duas entidades.
+---
 
-## O que eu usei
+👋 Olá! Esse repositório é a minha entrega oficial para o desafio técnico do processo seletivo da **MinhaFabrica**.
+
+Mais do que apenas cumprir requisitos, enxerguei este projeto como uma oportunidade de demonstrar a minha visão de como um software deve ser construído para a vida real: **organizado, seguro, escalável e pronto para produção.**
+
+O resultado é um painel administrativo com gestão de usuários e produtos, construído sobre uma API REST robusta e uma interface web fluida e moderna, com autenticação via JWT e um CRUD completo para as duas entidades.
+
+---
+
+## 🚀 Acesse a Aplicação (Deploy)
+
+Preparei um ambiente de produção real para facilitar a avaliação da aplicação rodando na prática. A API foi hospedada na Render e o Frontend na Vercel.
+
+**🔗 Link de acesso:** [Acessar a Aplicação](https://minhafabrica-desafio-tecnico.vercel.app/login)
+
+> ⚠️ **Nota Importante:** Como as instâncias do Backend no Render dormem após 15 minutos sem uso (plano gratuito), a **primeira requisição/login pode demorar em torno de 30 a 50 segundos** (processo conhecido como *Cold Start*). Após ele acordar, a navegação fica instantânea!
+
+**Credenciais Admin para Teste:**
+* **E-mail:** `admin@minhafabrica.com`
+* **Senha:** `senha123`
+
+---
+
+## 📸 Uma Espiada no Sistema
+
+Substitua estes espaços com os prints do seu projeto em funcionamento para o recrutador ver a "cara" do projeto de primeira.
+*(Crie uma pasta chamada `docs` na raiz do projeto, jogue as imagens lá dentro e atualize os nomes ou caminhos)*
+
+<div align="center">
+  <img src="./docs/login.png" alt="Tela de Login" width="48%">
+  <img src="./docs/dashboard.png" alt="Dashboard Principal" width="48%">
+  <br>
+  <img src="./docs/usuarios.png" alt="Listagem de Usuários" width="48%">
+  <img src="./docs/produtos.png" alt="Gestão de Produtos" width="48%">
+</div>
+
+---
+
+## 🛠️ Tecnologias Escolhidas
 
 **Backend:** Node.js + Express 5 + MongoDB (Mongoose 9) + TypeScript  
 **Frontend:** Next.js 16 + React 19 + TypeScript + Tailwind CSS v4  
-**Auth:** JWT
+**Segurança:** Autenticação via JWT, Rate Limiting, Helmet e CORS  
 
-Escolhi essa stack porque é o que eu tenho mais domínio hoje e porque faz sentido para o escopo do projeto — sem over-engineering, sem biblioteca pra tudo.
+Escolhi essa stack tecnológica porque ela me permite extrair a máxima performance e manutenção sem introduzir *over-engineering* complexo. É simples, eficiente e atende majestosamente ao escopo do desafio.
 
-## Como rodar
+---
 
-Você vai precisar de Node.js >= 18 e um MongoDB rodando (local ou no Atlas).
+## 🏗️ Como a Arquitetura foi Pensada
 
-### Backend
+O backend não é apenas um script gigante; ele segue rigorosamente o padrão **Controller → Service → Repository → Model**. 
+Gosto profundamente dessa separação porque deixa o código maduro:
+* **Controller:** Somente recebe a requisição e devolve a resposta HTTP.
+* **Service:** Abrigam todas as regras de negócio de forma isolada.
+* **Repository:** A única camada autorizada a conversar/fazer queries com o Banco de Dados.
 
+Isso facilita a criação de testes de unidade e poupa muitas horas de dor de cabeça caso precisemos escalar o projeto no futuro.
+
+---
+
+## 💻 Para Rodar Localmente
+
+Caso queira baixar e avaliar o código fonte rodando na sua máquina:
+
+Você vai precisar de Node.js (>= 18) e uma conexão com o MongoDB (Local ou Atlas).
+
+### 1. Subindo a API (Backend)
 ```bash
 cd backend
 npm install
 cp .env.example .env
-# Ajusta o .env com a URI do MongoDB e o JWT_SECRET
+# Configure sua URI do MongoDB e um JWT_SECRET dentro de .env
 npm run dev
 ```
+A API responde por padrão em `http://localhost:3001/api/v1`.
 
-A API sobe em `http://localhost:3001/api/v1`
+*Obs: Para criar o Admin inicial, envie um POST via Postman, Insomnia ou cURL para `http://localhost:3001/api/v1/auth/seed` com o backend rodando.*
 
-### Frontend
-
+### 2. Subindo a Interface (Frontend)
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-
-A interface sobe em `http://localhost:3000`
-
-### Criando o admin
-
-Com o backend no ar, rode isso uma vez pra criar o usuário inicial:
-
-```bash
-curl -X POST http://localhost:3001/api/v1/auth/seed
-```
-
-Depois é só logar com:
-
-| Campo  | Valor                  |
-| ------ | ---------------------- |
-| E-mail | admin@minhafabrica.com |
-| Senha  | senha123               |
-
-## Estrutura
-
-```
-├── backend/
-│   └── src/
-│       ├── config/         # Conexão com o banco
-│       ├── controllers/    # Entrada da requisição, delega pro service
-│       ├── services/       # Regras de negócio
-│       ├── repositories/   # Queries ao MongoDB
-│       ├── models/         # Schemas Mongoose
-│       ├── middlewares/     # Autenticação JWT e tratamento de erros
-│       ├── routes/         # Rotas centralizadas
-│       └── utils/          # Helpers
-│
-├── frontend/
-│   └── src/
-│       ├── app/            # Páginas via App Router
-│       ├── components/     # Componentes reutilizáveis
-│       ├── hooks/          # Custom hooks (auth)
-│       ├── services/       # Axios configurado
-│       ├── types/          # Interfaces TypeScript
-│       └── lib/            # Utilitários
-```
-
-## Endpoints
-
-| Método | Rota                   | Descrição            | Auth  |
-| ------ | ---------------------- | -------------------- | ----- |
-| POST   | `/api/v1/auth/seed`    | Cria o admin inicial | Não   |
-| POST   | `/api/v1/auth/login`   | Login                | Não   |
-| GET    | `/api/v1/dashboard`    | Contadores gerais    | Sim   |
-| GET    | `/api/v1/users`        | Lista usuários       | Sim   |
-| POST   | `/api/v1/users`        | Cria usuário         | Admin |
-| PUT    | `/api/v1/users/:id`    | Atualiza usuário     | Admin |
-| DELETE | `/api/v1/users/:id`    | Remove usuário       | Admin |
-| GET    | `/api/v1/products`     | Lista produtos       | Sim   |
-| POST   | `/api/v1/products`     | Cria produto         | Sim   |
-| PUT    | `/api/v1/products/:id` | Atualiza produto     | Sim   |
-| DELETE | `/api/v1/products/:id` | Remove produto       | Sim   |
-
-## Arquitetura
-
-O backend segue Controller → Service → Repository → Model. Gosto dessa separação porque deixa cada parte com uma responsabilidade bem definida — controller só sabe receber request, service só sabe de regra de negócio, repository só sabe falar com o banco. Facilita muito na hora de testar e de dar manutenção.
+A Aplicação Web levanta em `http://localhost:3000`.
 
 ---
 
-Qualquer dúvida sobre o projeto ou sobre as decisões técnicas, fico à disposição.
+Qualquer dúvida sobre o projeto, sobre o código ou sobre as decisões técnicas que tomei, estou totalmente à disposição! Muito obrigado pela oportunidade.
