@@ -192,7 +192,7 @@ export default function ProductsPage() {
                     <div className="flex items-center gap-3">
                       {product.imageUrl ? (
                         <img 
-                          src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:3001'}${product.imageUrl}`} 
+                          src={product.imageUrl.startsWith('http') ? product.imageUrl : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:3001'}${product.imageUrl}`} 
                           alt={product.name} 
                           className="h-10 w-10 min-w-10 rounded-md object-cover border border-slate-200" 
                         />
