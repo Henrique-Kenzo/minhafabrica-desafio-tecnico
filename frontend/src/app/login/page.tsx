@@ -38,6 +38,7 @@ export default function LoginPage() {
 
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
+      document.cookie = `token=${token}; path=/; max-age=86400; SameSite=Lax`;
 
       toast.success('Login realizado com sucesso!');
       router.push('/admin/dashboard');

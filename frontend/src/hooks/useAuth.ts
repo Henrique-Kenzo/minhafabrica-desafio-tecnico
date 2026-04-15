@@ -5,26 +5,23 @@ import { useEffect, useState } from 'react';
 import { UserProfile } from '@/types';
 export function useAuth() {
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    // A proteção agora é feita no middleware.ts, 
+    // hook apenas hidratações de state locais
     const storedUser = localStorage.getItem('user');
-
-    if (!token || !storedUser) {
-      router.push('/login');
-    } else {
+    if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
-    setLoading(false);
-  }, [router]);
+  }, []);
 
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    document.cookie = 'token=; Max-Age=0; path=/;';
     router.push('/login');
   };
 
-  return { user, loading, logout };
+  return { user, logout };
 }
