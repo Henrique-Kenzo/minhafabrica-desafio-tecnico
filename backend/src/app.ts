@@ -30,8 +30,8 @@ app.use(cors({ origin: process.env.FRONTEND_URL || '*' }));
 
 
 
-// limitando tamanho do body
-app.use(express.json({ limit: '10kb' }));
+// limitando tamanho do body (10mb para suportar imagens em base64)
+app.use(express.json({ limit: '10mb' }));
 
 
 // rotas principais
