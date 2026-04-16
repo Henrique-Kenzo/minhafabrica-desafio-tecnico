@@ -10,29 +10,21 @@ import { Edit2, Plus, Trash2, Search, Filter, Image as ImageIcon, ChevronLeft, C
 import { Toaster, toast } from 'react-hot-toast';
 
 import { Product } from '@/types';
+import { usePaginatedCache } from '@/hooks/usePaginatedCache';
+import { useDebounce } from '@/hooks/useDebounce';
 
 export default function ProductsPage() {
-  const [products, setProducts] = React.useState<Product[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [editingProduct, setEditingProduct] = React.useState<Product | null>(null);
   const [imageFile, setImageFile] = React.useState<File | null>(null);
   const [deletingIds, setDeletingIds] = React.useState<string[]>([]);
-  const productsCache = React.useRef<{ [key: string]: { data: Product[], total: number } }>({});
-
-  const clearCache = () => {
-    productsCache.current = {};
-  };
-
 
   const [modalPrice, setModalPrice] = React.useState('');
   const [modalCategory, setModalCategory] = React.useState('');
   const [isCategoryPickerOpen, setIsCategoryPickerOpen] = React.useState(false);
 
   const [currentPage, setCurrentPage] = React.useState(1);
-  const [totalPages, setTotalPages] = React.useState(1);
-  const [totalItems, setTotalItems] = React.useState(0);
-
   const [searchTerm, setSearchTerm] = React.useState('');
   const [categoryFilter, setCategoryFilter] = React.useState('');
   const [availableCategories, setAvailableCategories] = React.useState<string[]>([]);
@@ -50,53 +42,25 @@ export default function ProductsPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
   
+  const debouncedSearch = useDebounce(searchTerm, 500);
+
+  const {
+    data: products,
+    totalItems,
+    isLoading,
+    totalPages,
+    mutate,
+    refetch,
+    invalidateCache
+  } = usePaginatedCache<Product>('/products', currentPage, 15, {
+    search: debouncedSearch,
+    category: categoryFilter
+  });
+
   // Resetar a paginação ao digitar novos filtros
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, categoryFilter]);
-
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchProducts();
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [searchTerm, categoryFilter, currentPage]);
-
-  const fetchProducts = async () => {
-    const cacheKey = `${currentPage}-${searchTerm}-${categoryFilter}`;
-    
-    if (productsCache.current[cacheKey]) {
-      setProducts(productsCache.current[cacheKey].data);
-      const calculatedPages = Math.ceil((productsCache.current[cacheKey].total || 0) / 15);
-      setTotalPages(calculatedPages > 0 ? calculatedPages : 1);
-      setTotalItems(productsCache.current[cacheKey].total || 0);
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const qs = new URLSearchParams();
-      if (searchTerm) qs.append('search', searchTerm);
-      if (categoryFilter) qs.append('category', categoryFilter);
-      qs.append('page', currentPage.toString());
-      qs.append('limit', '15');
-      
-      const res = await api.get(`/products?${qs.toString()}`);
-      setProducts(res.data.data);
-      const calculatedPages = Math.ceil((res.data.total || 0) / 15);
-      setTotalPages(calculatedPages > 0 ? calculatedPages : 1);
-      setTotalItems(res.data.total || 0);
-
-      productsCache.current[cacheKey] = {
-        data: res.data.data,
-        total: res.data.total || 0
-      };
-    } catch {
-      toast.error('Erro ao carregar produtos');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }, [debouncedSearch, categoryFilter]);
 
   const fetchCategories = async () => {
     try {
@@ -131,10 +95,9 @@ export default function ProductsPage() {
     try {
       await api.delete(`/products/${id}`);
       toast.success('Produto excluído!');
-      clearCache();
+      invalidateCache();
       setTimeout(() => {
-        setProducts(prev => prev.filter(p => p._id !== id));
-        setTotalItems(prev => Math.max(0, prev - 1));
+        mutate(products.filter(p => p._id !== id), Math.max(0, totalItems - 1));
         setDeletingIds(prev => prev.filter(d => d !== id));
       }, 300);
     } catch {
@@ -193,7 +156,7 @@ export default function ProductsPage() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const data = Object.fromEntries(formData.entries());
-    setIsLoading(true);
+    setIsSubmitting(true);
 
     let uploadedImageUrl = editingProduct?.imageUrl || '';
 
@@ -222,13 +185,12 @@ export default function ProductsPage() {
         toast.success('Produto criado!');
       }
       handleCloseModal();
-      clearCache();
-      fetchProducts();
+      refetch();
       fetchCategories();
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Erro ao processar.');
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 

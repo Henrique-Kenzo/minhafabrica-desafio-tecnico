@@ -11,22 +11,16 @@ import { Toaster, toast } from 'react-hot-toast';
 
 import { User } from '@/types';
 
+import { usePaginatedCache } from '@/hooks/usePaginatedCache';
+import { useDebounce } from '@/hooks/useDebounce';
+
 export default function UsersPage() {
-  const [users, setUsers] = React.useState<User[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [editingUser, setEditingUser] = React.useState<User | null>(null);
   const [deletingIds, setDeletingIds] = React.useState<string[]>([]);
-  const usersCache = React.useRef<{ [key: string]: { data: User[], total: number } }>({});
-
-  const clearCache = () => {
-    usersCache.current = {};
-  };
 
   const [currentPage, setCurrentPage] = React.useState(1);
-  const [totalPages, setTotalPages] = React.useState(1);
-  const [totalItems, setTotalItems] = React.useState(0);
-
   const [searchTerm, setSearchTerm] = React.useState('');
   const [profileFilter, setProfileFilter] = React.useState('');
 
@@ -43,52 +37,24 @@ export default function UsersPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const fetchUsers = async () => {
-    const cacheKey = `${currentPage}-${searchTerm}-${profileFilter}`;
-    
-    if (usersCache.current[cacheKey]) {
-      setUsers(usersCache.current[cacheKey].data);
-      const calculatedPages = Math.ceil((usersCache.current[cacheKey].total || 0) / 15);
-      setTotalPages(calculatedPages > 0 ? calculatedPages : 1);
-      setTotalItems(usersCache.current[cacheKey].total || 0);
-      return;
-    }
+  const debouncedSearch = useDebounce(searchTerm, 500);
 
-    setIsLoading(true);
-    try {
-      const qs = new URLSearchParams();
-      if (searchTerm) qs.append('search', searchTerm);
-      if (profileFilter) qs.append('profile', profileFilter);
-      qs.append('page', currentPage.toString());
-      qs.append('limit', '15');
-      
-      const res = await api.get(`/users?${qs.toString()}`);
-      setUsers(res.data.data);
-      const calculatedPages = Math.ceil((res.data.total || 0) / 15);
-      setTotalPages(calculatedPages > 0 ? calculatedPages : 1);
-      setTotalItems(res.data.total || 0);
-
-      usersCache.current[cacheKey] = {
-        data: res.data.data,
-        total: res.data.total || 0
-      };
-    } catch {
-      toast.error('Erro ao carregar usuários');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const {
+    data: users,
+    totalItems,
+    isLoading,
+    totalPages,
+    mutate,
+    refetch,
+    invalidateCache
+  } = usePaginatedCache<User>('/users', currentPage, 15, {
+    search: debouncedSearch,
+    profile: profileFilter
+  });
 
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, profileFilter]);
-
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchUsers();
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [searchTerm, profileFilter, currentPage]);
+  }, [debouncedSearch, profileFilter]);
 
   const getVisiblePages = () => {
     const pages = [];
@@ -110,10 +76,9 @@ export default function UsersPage() {
     try {
       await api.delete(`/users/${id}`);
       toast.success('Usuário excluído!');
-      clearCache();
+      invalidateCache();
       setTimeout(() => {
-        setUsers(prev => prev.filter(u => u._id !== id));
-        setTotalItems(prev => Math.max(0, prev - 1));
+        mutate(users.filter(u => u._id !== id), Math.max(0, totalItems - 1));
         setDeletingIds(prev => prev.filter(d => d !== id));
       }, 300);
     } catch {
@@ -136,6 +101,7 @@ export default function UsersPage() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const data = Object.fromEntries(formData.entries());
+    setIsSubmitting(true);
 
     try {
       if (editingUser) {
@@ -147,10 +113,11 @@ export default function UsersPage() {
         toast.success('Usuário criado!');
       }
       handleCloseModal();
-      clearCache();
-      fetchUsers();
+      refetch();
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Erro ao salvar usuário');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
