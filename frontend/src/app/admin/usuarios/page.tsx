@@ -16,6 +16,12 @@ export default function UsersPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [editingUser, setEditingUser] = React.useState<User | null>(null);
+  const [deletingIds, setDeletingIds] = React.useState<string[]>([]);
+  const usersCache = React.useRef<{ [key: string]: { data: User[], total: number } }>({});
+
+  const clearCache = () => {
+    usersCache.current = {};
+  };
 
   const [currentPage, setCurrentPage] = React.useState(1);
   const [totalPages, setTotalPages] = React.useState(1);
@@ -38,6 +44,16 @@ export default function UsersPage() {
   }, []);
 
   const fetchUsers = async () => {
+    const cacheKey = `${currentPage}-${searchTerm}-${profileFilter}`;
+    
+    if (usersCache.current[cacheKey]) {
+      setUsers(usersCache.current[cacheKey].data);
+      const calculatedPages = Math.ceil((usersCache.current[cacheKey].total || 0) / 15);
+      setTotalPages(calculatedPages > 0 ? calculatedPages : 1);
+      setTotalItems(usersCache.current[cacheKey].total || 0);
+      return;
+    }
+
     setIsLoading(true);
     try {
       const qs = new URLSearchParams();
@@ -51,6 +67,11 @@ export default function UsersPage() {
       const calculatedPages = Math.ceil((res.data.total || 0) / 15);
       setTotalPages(calculatedPages > 0 ? calculatedPages : 1);
       setTotalItems(res.data.total || 0);
+
+      usersCache.current[cacheKey] = {
+        data: res.data.data,
+        total: res.data.total || 0
+      };
     } catch {
       toast.error('Erro ao carregar usuários');
     } finally {
@@ -85,12 +106,19 @@ export default function UsersPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Deseja realmente excluir este usuário?')) return;
+    setDeletingIds(prev => [...prev, id]);
     try {
       await api.delete(`/users/${id}`);
       toast.success('Usuário excluído!');
-      fetchUsers();
+      clearCache();
+      setTimeout(() => {
+        setUsers(prev => prev.filter(u => u._id !== id));
+        setTotalItems(prev => Math.max(0, prev - 1));
+        setDeletingIds(prev => prev.filter(d => d !== id));
+      }, 300);
     } catch {
       toast.error('Erro ao excluir usuário');
+      setDeletingIds(prev => prev.filter(d => d !== id));
     }
   };
 
@@ -119,6 +147,7 @@ export default function UsersPage() {
         toast.success('Usuário criado!');
       }
       handleCloseModal();
+      clearCache();
       fetchUsers();
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Erro ao salvar usuário');
@@ -160,7 +189,7 @@ export default function UsersPage() {
           <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
           <button
             onClick={() => setIsProfileOpen(!isProfileOpen)}
-            className="flex items-center justify-between h-9 w-full rounded-md border border-slate-200 bg-white pl-9 pr-3 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-950 text-slate-700"
+            className="flex items-center justify-between h-9 w-full rounded-md border border-slate-200 bg-transparent pl-9 pr-3 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-950 text-slate-700"
           >
             <span className="truncate">
               {profileFilter === '' ? "Todos os perfis" : profileFilter === 'admin' ? "Admin" : "User"}
@@ -221,7 +250,10 @@ export default function UsersPage() {
               </TableRow>
             ) : (
               users.map((user) => (
-                <TableRow key={user._id}>
+                <TableRow 
+                  key={user._id}
+                  className={`transition-all duration-300 ${deletingIds.includes(user._id) ? 'opacity-0 bg-red-50' : ''}`}
+                >
                   <TableCell className="font-medium text-slate-900">{user.name}</TableCell>
                   <TableCell className="text-slate-500">{user.email}</TableCell>
                   <TableCell>

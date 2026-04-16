@@ -17,6 +17,12 @@ export default function ProductsPage() {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [editingProduct, setEditingProduct] = React.useState<Product | null>(null);
   const [imageFile, setImageFile] = React.useState<File | null>(null);
+  const [deletingIds, setDeletingIds] = React.useState<string[]>([]);
+  const productsCache = React.useRef<{ [key: string]: { data: Product[], total: number } }>({});
+
+  const clearCache = () => {
+    productsCache.current = {};
+  };
 
 
   const [modalPrice, setModalPrice] = React.useState('');
@@ -57,6 +63,16 @@ export default function ProductsPage() {
   }, [searchTerm, categoryFilter, currentPage]);
 
   const fetchProducts = async () => {
+    const cacheKey = `${currentPage}-${searchTerm}-${categoryFilter}`;
+    
+    if (productsCache.current[cacheKey]) {
+      setProducts(productsCache.current[cacheKey].data);
+      const calculatedPages = Math.ceil((productsCache.current[cacheKey].total || 0) / 15);
+      setTotalPages(calculatedPages > 0 ? calculatedPages : 1);
+      setTotalItems(productsCache.current[cacheKey].total || 0);
+      return;
+    }
+
     setIsLoading(true);
     try {
       const qs = new URLSearchParams();
@@ -70,6 +86,11 @@ export default function ProductsPage() {
       const calculatedPages = Math.ceil((res.data.total || 0) / 15);
       setTotalPages(calculatedPages > 0 ? calculatedPages : 1);
       setTotalItems(res.data.total || 0);
+
+      productsCache.current[cacheKey] = {
+        data: res.data.data,
+        total: res.data.total || 0
+      };
     } catch {
       toast.error('Erro ao carregar produtos');
     } finally {
@@ -106,12 +127,19 @@ export default function ProductsPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Deseja realmente excluir este produto?')) return;
+    setDeletingIds(prev => [...prev, id]);
     try {
       await api.delete(`/products/${id}`);
       toast.success('Produto excluído!');
-      fetchProducts();
+      clearCache();
+      setTimeout(() => {
+        setProducts(prev => prev.filter(p => p._id !== id));
+        setTotalItems(prev => Math.max(0, prev - 1));
+        setDeletingIds(prev => prev.filter(d => d !== id));
+      }, 300);
     } catch {
       toast.error('Erro ao excluir produto');
+      setDeletingIds(prev => prev.filter(d => d !== id));
     }
   };
 
@@ -136,6 +164,10 @@ export default function ProductsPage() {
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/\D/g, '');
     
+    if (value.length > 14) {
+      value = value.slice(0, 14);
+    }
+
     if (value === '') {
       setModalPrice('');
       return;
@@ -190,6 +222,7 @@ export default function ProductsPage() {
         toast.success('Produto criado!');
       }
       handleCloseModal();
+      clearCache();
       fetchProducts();
       fetchCategories();
     } catch (err: any) {
@@ -234,7 +267,7 @@ export default function ProductsPage() {
           <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
           <button
             onClick={() => setIsCategoryOpen(!isCategoryOpen)}
-            className="flex items-center justify-between h-9 w-full rounded-md border border-slate-200 bg-white pl-9 pr-3 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-950 text-slate-700"
+            className="flex items-center justify-between h-9 w-full rounded-md border border-slate-200 bg-transparent pl-9 pr-3 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-950 text-slate-700"
           >
             <span className="truncate">{categoryFilter || "Todas as categorias"}</span>
             <ChevronDown className="h-4 w-4 text-slate-400 shrink-0 ml-2" />
@@ -291,7 +324,10 @@ export default function ProductsPage() {
               </TableRow>
             ) : (
               products.map((product) => (
-                <TableRow key={product._id}>
+                <TableRow 
+                  key={product._id}
+                  className={`transition-all duration-300 ${deletingIds.includes(product._id) ? 'opacity-0 bg-red-50' : ''}`}
+                >
                   <TableCell className="font-medium text-slate-900">
                     <div className="flex items-center gap-3">
                       {product.imageUrl ? (
@@ -431,7 +467,9 @@ export default function ProductsPage() {
                 onBlur={() => setTimeout(() => setIsCategoryPickerOpen(false), 150)}
                 required 
                 placeholder="Ex: Eletrônicos, Roupas" 
+                className="pr-9"
               />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
               {isCategoryPickerOpen && availableCategories.length > 0 && (
                 <div className="absolute z-10 top-full mt-1 w-full bg-white border border-slate-200 rounded-md shadow-lg py-1 max-h-40 overflow-y-auto">
                   {availableCategories.map(cat => (
