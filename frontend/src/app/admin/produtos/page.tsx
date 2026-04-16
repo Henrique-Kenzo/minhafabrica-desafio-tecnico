@@ -16,7 +16,7 @@ export default function ProductsPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [editingProduct, setEditingProduct] = React.useState<Product | null>(null);
-  const [imageFile, setImageFile] = React.useState<File | null>(null);
+
 
   const [modalPrice, setModalPrice] = React.useState('');
   const [modalCategory, setModalCategory] = React.useState('');
@@ -128,7 +128,6 @@ export default function ProductsPage() {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingProduct(null);
-    setImageFile(null);
     setIsCategoryPickerOpen(false);
   };
 
@@ -162,22 +161,13 @@ export default function ProductsPage() {
     const data = Object.fromEntries(formData.entries());
     setIsLoading(true);
 
-    let uploadedImageUrl = editingProduct?.imageUrl || '';
-
     try {
-      if (imageFile) {
-        const fileData = new FormData();
-        fileData.append('image', imageFile);
-        const uploadRes = await api.post('/products/upload', fileData, { headers: { 'Content-Type': 'multipart/form-data' } });
-        uploadedImageUrl = uploadRes.data.imageUrl;
-      }
-
       const payload = {
         ...data,
         price: Number(modalPrice.replace(/\./g, '').replace(',', '.')),
         category: modalCategory,
         stock: Number(data.stock),
-        imageUrl: uploadedImageUrl || undefined,
+        imageUrl: (data.imageUrl as string) || undefined,
       };
 
       if (editingProduct) {
@@ -283,7 +273,7 @@ export default function ProductsPage() {
                     <div className="flex items-center gap-3">
                       {product.imageUrl ? (
                         <img 
-                          src={product.imageUrl.startsWith('http') ? product.imageUrl : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:3001'}${product.imageUrl}`} 
+                          src={product.imageUrl} 
                           alt={product.name} 
                           className="h-10 w-10 min-w-10 rounded-md object-cover border border-slate-200" 
                         />
@@ -366,19 +356,14 @@ export default function ProductsPage() {
 
       <Modal isOpen={isModalOpen} onClose={handleCloseModal} title={editingProduct ? 'Editar Produto' : 'Novo Produto'}>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex items-center gap-4 border border-dashed border-slate-300 p-4 rounded-lg bg-slate-50">
-             <div className="flex-1">
-               <label className="block text-sm font-medium text-slate-700 mb-1">Imagem do Produto (Opcional)</label>
-               <Input 
-                 type="file" 
-                 accept="image/*" 
-                 onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-                 className="text-slate-500 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-               />
-               {editingProduct?.imageUrl && !imageFile && (
-                 <p className="text-xs text-slate-500 mt-2">Imagem atual já enviada.</p>
-               )}
-             </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">URL da Imagem (Opcional)</label>
+            <Input 
+              name="imageUrl" 
+              type="url" 
+              defaultValue={editingProduct?.imageUrl || ''}
+              placeholder="https://exemplo.com/imagem.jpg"
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Nome</label>
