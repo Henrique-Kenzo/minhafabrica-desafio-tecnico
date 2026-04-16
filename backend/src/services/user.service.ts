@@ -2,6 +2,7 @@ import { UserRepository } from '../repositories/user.repository';
 import { IUser } from '../models/user.model';
 import { hashPassword } from '../utils/password.utils';
 import { AppError } from '../utils/AppError';
+import { createDiacriticAwareRegex } from '../utils/regex.utils';
 
 export interface CreateUserDTO {
   name: string; email: string; password?: string; profile?: 'admin' | 'user';
@@ -13,9 +14,10 @@ export class UserService {
   async findAll(page = 1, limit = 10, search?: string, profile?: string) {
     const filter: any = {};
     if (search) {
+      const searchRegex = createDiacriticAwareRegex(search);
       filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } }
+        { name: { $regex: searchRegex, $options: 'i' } },
+        { email: { $regex: searchRegex, $options: 'i' } }
       ];
     }
     if (profile) filter.profile = profile;

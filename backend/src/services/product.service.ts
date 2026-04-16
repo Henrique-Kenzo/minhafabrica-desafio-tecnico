@@ -1,6 +1,7 @@
 import { ProductRepository } from '../repositories/product.repository';
 import { IProduct } from '../models/product.model';
 import { AppError } from '../utils/AppError';
+import { createDiacriticAwareRegex } from '../utils/regex.utils';
 
 export interface CreateProductDTO {
   name: string; description: string; price: number; stock: number; category: string;
@@ -11,7 +12,10 @@ export class ProductService {
 
   async findAll(page = 1, limit = 10, search?: string, category?: string) {
     const filter: any = {};
-    if (search) filter.name = { $regex: search, $options: 'i' };
+    if (search) {
+      const searchRegex = createDiacriticAwareRegex(search);
+      filter.name = { $regex: searchRegex, $options: 'i' };
+    }
     if (category) filter.category = category;
     return this.productRepo.findAll(page, limit, filter);
   }

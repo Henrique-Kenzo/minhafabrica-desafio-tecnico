@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
-import { Edit2, Plus, Trash2, Search, Filter, Image as ImageIcon, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { Edit2, Plus, Trash2, Search, Filter, Image as ImageIcon, ChevronLeft, ChevronRight, ChevronDown, X } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 
 import { Product } from '@/types';
@@ -213,14 +213,22 @@ export default function ProductsPage() {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 mb-2">
-        <div className="relative flex-1">
+        <div className="relative flex-1 group">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input 
             placeholder="Buscar por nome do produto..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9"
+            className="pl-9 pr-9"
           />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
         <div className="relative w-full sm:w-56" ref={categoryRef}>
           <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
