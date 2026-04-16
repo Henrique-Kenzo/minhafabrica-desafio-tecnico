@@ -185,7 +185,7 @@ export default function UsersPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col min-h-[500px]">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col min-h-[700px]">
         <Table>
           <TableHeader>
             <TableRow>
@@ -198,13 +198,16 @@ export default function UsersPage() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={4} className="h-32 text-center text-slate-500">
-                  Carregando...
+                <TableCell colSpan={4} className="h-[400px] text-center text-slate-500">
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900 mb-4"></div>
+                    Carregando...
+                  </div>
                 </TableCell>
               </TableRow>
             ) : users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="h-32 text-center text-slate-500">
+                <TableCell colSpan={4} className="h-[400px] text-center text-slate-500">
                   Nenhum usuário encontrado.
                 </TableCell>
               </TableRow>
