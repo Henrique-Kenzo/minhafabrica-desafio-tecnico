@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
-import { Edit2, Plus, Trash2, Search, Filter, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Edit2, Plus, Trash2, Search, Filter, Image as ImageIcon, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 
 import { Product } from '@/types';
@@ -18,6 +18,10 @@ export default function ProductsPage() {
   const [editingProduct, setEditingProduct] = React.useState<Product | null>(null);
   const [imageFile, setImageFile] = React.useState<File | null>(null);
 
+  const [modalPrice, setModalPrice] = React.useState('');
+  const [modalCategory, setModalCategory] = React.useState('');
+  const [isCategoryPickerOpen, setIsCategoryPickerOpen] = React.useState(false);
+
   const [currentPage, setCurrentPage] = React.useState(1);
   const [totalPages, setTotalPages] = React.useState(1);
   const [totalItems, setTotalItems] = React.useState(0);
@@ -25,6 +29,19 @@ export default function ProductsPage() {
   const [searchTerm, setSearchTerm] = React.useState('');
   const [categoryFilter, setCategoryFilter] = React.useState('');
   const [availableCategories, setAvailableCategories] = React.useState<string[]>([]);
+  
+  const [isCategoryOpen, setIsCategoryOpen] = React.useState(false);
+  const categoryRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (categoryRef.current && !categoryRef.current.contains(event.target as Node)) {
+        setIsCategoryOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
   
   // Resetar a paginação ao digitar novos filtros
   React.useEffect(() => {
@@ -99,6 +116,12 @@ export default function ProductsPage() {
 
   const handleOpenModal = (product?: Product) => {
     setEditingProduct(product || null);
+    if (product?.price) {
+      setModalPrice(product.price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    } else {
+      setModalPrice('');
+    }
+    setModalCategory(product?.category || '');
     setIsModalOpen(true);
   };
 
@@ -106,6 +129,31 @@ export default function ProductsPage() {
     setIsModalOpen(false);
     setEditingProduct(null);
     setImageFile(null);
+    setIsCategoryPickerOpen(false);
+  };
+
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, '');
+    
+    if (value === '') {
+      setModalPrice('');
+      return;
+    }
+    
+    value = Number(value).toString();
+    value = value.padStart(3, '0');
+    
+    let decimals = value.slice(-2);
+    let integers = value.slice(0, -2);
+    
+    integers = integers.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    
+    setModalPrice(integers + ',' + decimals);
+  };
+
+  const handleTextareaInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    e.target.style.height = 'auto';
+    e.target.style.height = `${Math.min(e.target.scrollHeight, 150)}px`;
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -126,7 +174,8 @@ export default function ProductsPage() {
 
       const payload = {
         ...data,
-        price: Number(data.price),
+        price: Number(modalPrice.replace(/\./g, '').replace(',', '.')),
+        category: modalCategory,
         stock: Number(data.stock),
         imageUrl: uploadedImageUrl || undefined,
       };
@@ -171,23 +220,37 @@ export default function ProductsPage() {
             className="pl-9"
           />
         </div>
-        <div className="relative w-full sm:w-64">
-          <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input 
-            placeholder="Filtrar por categoria..." 
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="pl-9"
-            list="category-suggestions"
-          />
+        <div className="relative w-full sm:w-56" ref={categoryRef}>
+          <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+          <button
+            onClick={() => setIsCategoryOpen(!isCategoryOpen)}
+            className="flex items-center justify-between h-9 w-full rounded-md border border-slate-200 bg-white pl-9 pr-3 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-950 text-slate-700"
+          >
+            <span className="truncate">{categoryFilter || "Todas as categorias"}</span>
+            <ChevronDown className="h-4 w-4 text-slate-400 shrink-0 ml-2" />
+          </button>
+          
+          {isCategoryOpen && (
+            <div className="absolute z-10 top-full mt-1 w-full bg-white border border-slate-200 rounded-md shadow-lg overflow-hidden py-1 max-h-60 overflow-y-auto">
+              <div 
+                className={`px-3 py-2 text-sm cursor-pointer transition-colors ${categoryFilter === '' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-700 hover:bg-slate-50'}`}
+                onClick={() => { setCategoryFilter(''); setIsCategoryOpen(false); }}
+              >
+                Todas as categorias
+              </div>
+              {availableCategories.map(cat => (
+                <div 
+                  key={cat}
+                  className={`px-3 py-2 text-sm cursor-pointer transition-colors flex items-center justify-between ${categoryFilter === cat ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-700 hover:bg-slate-50'}`}
+                  onClick={() => { setCategoryFilter(cat); setIsCategoryOpen(false); }}
+                >
+                  <span className="truncate">{cat}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
-
-      <datalist id="category-suggestions">
-        {availableCategories.map(cat => (
-          <option key={cat} value={cat} />
-        ))}
-      </datalist>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200">
         <Table>
@@ -328,13 +391,14 @@ export default function ProductsPage() {
               required
               defaultValue={editingProduct?.description}
               placeholder="Descreva o produto"
-              className="flex min-h-[80px] w-full rounded-md border border-slate-200 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-950"
+              onChange={handleTextareaInput}
+              className="flex min-h-[40px] max-h-[150px] w-full rounded-md border border-slate-200 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-950 resize-none overflow-y-auto"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Preço</label>
-              <Input name="price" type="number" step="0.01" min="0" required defaultValue={editingProduct?.price} placeholder="0.00" />
+              <label className="block text-sm font-medium text-slate-700 mb-1">Preço (R$)</label>
+              <Input value={modalPrice} onChange={handlePriceChange} required placeholder="Ex: 1.682,82" />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Estoque</label>
@@ -343,13 +407,36 @@ export default function ProductsPage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Categoria</label>
-            <Input 
-              name="category" 
-              required 
-              defaultValue={editingProduct?.category} 
-              placeholder="Ex: Eletrônicos, Roupas" 
-              list="category-suggestions"
-            />
+            <div className="relative">
+              <Input 
+                value={modalCategory} 
+                onChange={(e) => {
+                  setModalCategory(e.target.value);
+                  setIsCategoryPickerOpen(true);
+                }}
+                onFocus={() => setIsCategoryPickerOpen(true)}
+                onBlur={() => setTimeout(() => setIsCategoryPickerOpen(false), 150)}
+                required 
+                placeholder="Ex: Eletrônicos, Roupas" 
+              />
+              {isCategoryPickerOpen && availableCategories.length > 0 && (
+                <div className="absolute z-10 top-full mt-1 w-full bg-white border border-slate-200 rounded-md shadow-lg py-1 max-h-40 overflow-y-auto">
+                  {availableCategories.map(cat => (
+                    <div 
+                      key={cat}
+                      className="px-3 py-2 text-sm cursor-pointer hover:bg-slate-50 text-slate-700"
+                      onMouseDown={(e) => {
+                        e.preventDefault(); 
+                        setModalCategory(cat); 
+                        setIsCategoryPickerOpen(false);
+                      }}
+                    >
+                      {cat}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           <div className="flex justify-end gap-3 mt-6">
             <Button type="button" variant="outline" onClick={handleCloseModal} disabled={isLoading}>Cancelar</Button>

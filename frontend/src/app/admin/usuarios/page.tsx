@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
-import { Edit2, Plus, Trash2, Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Edit2, Plus, Trash2, Search, Filter, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 
 import { User } from '@/types';
@@ -23,6 +23,19 @@ export default function UsersPage() {
 
   const [searchTerm, setSearchTerm] = React.useState('');
   const [profileFilter, setProfileFilter] = React.useState('');
+
+  const [isProfileOpen, setIsProfileOpen] = React.useState(false);
+  const profileRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const fetchUsers = async () => {
     setIsLoading(true);
@@ -135,19 +148,40 @@ export default function UsersPage() {
             className="pl-9"
           />
         </div>
-        <div className="relative w-full sm:w-64">
-          <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input 
-            placeholder="Filtrar por perfil (admin/user)..." 
-            value={profileFilter}
-            onChange={(e) => setProfileFilter(e.target.value)}
-            className="pl-9"
-            list="profile-suggestions"
-          />
-          <datalist id="profile-suggestions">
-            <option value="admin" />
-            <option value="user" />
-          </datalist>
+        <div className="relative w-full sm:w-56" ref={profileRef}>
+          <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+          <button
+            onClick={() => setIsProfileOpen(!isProfileOpen)}
+            className="flex items-center justify-between h-9 w-full rounded-md border border-slate-200 bg-white pl-9 pr-3 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-950 text-slate-700"
+          >
+            <span className="truncate">
+              {profileFilter === '' ? "Todos os perfis" : profileFilter === 'admin' ? "Admin" : "User"}
+            </span>
+            <ChevronDown className="h-4 w-4 text-slate-400 shrink-0 ml-2" />
+          </button>
+          
+          {isProfileOpen && (
+            <div className="absolute z-10 top-full mt-1 w-full bg-white border border-slate-200 rounded-md shadow-lg overflow-hidden py-1">
+              <div 
+                className={`px-3 py-2 text-sm cursor-pointer transition-colors ${profileFilter === '' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-700 hover:bg-slate-50'}`}
+                onClick={() => { setProfileFilter(''); setIsProfileOpen(false); }}
+              >
+                Todos os perfis
+              </div>
+              <div 
+                className={`px-3 py-2 text-sm cursor-pointer transition-colors ${profileFilter === 'admin' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-700 hover:bg-slate-50'}`}
+                onClick={() => { setProfileFilter('admin'); setIsProfileOpen(false); }}
+              >
+                Admin
+              </div>
+              <div 
+                className={`px-3 py-2 text-sm cursor-pointer transition-colors ${profileFilter === 'user' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-700 hover:bg-slate-50'}`}
+                onClick={() => { setProfileFilter('user'); setIsProfileOpen(false); }}
+              >
+                User
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
