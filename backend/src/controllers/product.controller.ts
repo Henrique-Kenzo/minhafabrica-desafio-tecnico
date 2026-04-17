@@ -20,11 +20,17 @@ export const getCategories = asyncHandler(async (_req: Request, res: Response) =
 });
 
 export const createProduct = asyncHandler(async (req: Request, res: Response) => {
+  if (req.body.price !== undefined) {
+    req.body.price = Math.round(Number(req.body.price) * 100);
+  }
   const product = await productService.create(req.body);
   res.status(201).json(product);
 });
 
 export const updateProduct = asyncHandler(async (req: Request, res: Response) => {
+  if (req.body.price !== undefined) {
+    req.body.price = Math.round(Number(req.body.price) * 100);
+  }
   const product = await productService.update(req.params.id as string, req.body);
   res.json(product);
 });
