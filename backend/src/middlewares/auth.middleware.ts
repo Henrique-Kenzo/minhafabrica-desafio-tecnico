@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { AppError } from '../utils/AppError';
 
-// estende interface do express pra aceitar o req.user
 export interface JwtPayload { id: string; email: string; profile: string; }
 
 declare global {

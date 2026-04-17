@@ -36,7 +36,6 @@ describe('User Tests', () => {
   });
 
   it('should fail finding users without admin role if user tries (mocking user try by removing admin status)', async () => {
-    // A regular user cannot do this. We don't have a regular user token yet, let's login with the common user.
     const loginCommon = await request(app)
       .post('/api/v1/auth/login')
       .send({ email: 'common@test.com', password: 'password123' });
@@ -45,8 +44,6 @@ describe('User Tests', () => {
     const userToken = loginCommon.body.token;
 
     const res = await request(app).get('/api/v1/users').set('Authorization', `Bearer ${userToken}`);
-    // Users requires admin only or token, some code bases might allow users to list. But we know from architecture typically it's admin. Let's see if it errors.
-    // Assuming isAdmin restricts this, it might be 403.
     expect([401, 403]).toContain(res.status);
   });
 
@@ -66,7 +63,6 @@ describe('User Tests', () => {
 
   it('should fail update with invalid id/body', async () => {
     const res = await request(app).put(`/api/v1/users/brokenid`).set('Authorization', `Bearer ${token}`).send({});
-    // Some mongoose or AppError handling
     expect([500, 400]).toContain(res.status);
   });
 

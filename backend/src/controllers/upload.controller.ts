@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import { v2 as cloudinary } from 'cloudinary';
 import { AppError } from '../utils/AppError';
 
-// A configuração pode ficar aqui ou num arquivo separado, mas para simplicidade manteremos aqui
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -17,7 +16,6 @@ export const getUploadSignature = (req: Request, res: Response) => {
     throw new AppError('Cloudinary não configurado no servidor.', 500);
   }
 
-  // Gera assinatura
   const signature = cloudinary.utils.api_sign_request(
     {
       timestamp,

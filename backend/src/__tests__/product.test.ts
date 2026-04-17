@@ -6,10 +6,8 @@ let token: string;
 
 describe('Product Integration Tests', () => {
   beforeEach(async () => {
-    // 1. Seed admin
     await request(app).post('/api/v1/auth/seed').send();
 
-    // 2. Login admin
     const res = await request(app)
       .post('/api/v1/auth/login')
       .send({ email: process.env.ADMIN_EMAIL || 'admin@minhafabrica.com', password: process.env.ADMIN_PASSWORD || 'senha123' });
@@ -19,20 +17,18 @@ describe('Product Integration Tests', () => {
 
   describe('Monetary Paradigm Shift', () => {
     it('should create a product and store price multiplied by 100 as integer', async () => {
-      // 100.35 in the payload
       const res = await request(app)
         .post('/api/v1/products')
         .set('Authorization', `Bearer ${token}`)
         .send({
           name: 'Produto Teste Monetary',
           description: 'Validates cent-level manipulation',
-          price: 100.35, 
+          price: 100.35,
           stock: 10,
           category: 'Teste'
         });
 
       expect(res.status).toBe(201);
-      // The controller multiplies 100.35 * 100 = 10035
       expect(res.body.price).toBe(10035);
     });
 
@@ -73,7 +69,6 @@ describe('Product Integration Tests', () => {
       expect(res.body).toHaveProperty('timestamp');
       expect(res.body).toHaveProperty('cloudName');
       expect(typeof res.body.signature).toBe('string');
-      // Must not be an image upload endpoint anymore
     });
   });
 });

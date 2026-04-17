@@ -17,7 +17,6 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // se voltar 401 joga o usuario pro login (ignorando a rota de login pra nao engolir o toast de erro)
     const isLoginRequest = error.config?.url?.includes('/auth/login');
 
     if (error.response?.status === 401 && typeof window !== 'undefined' && !isLoginRequest) {

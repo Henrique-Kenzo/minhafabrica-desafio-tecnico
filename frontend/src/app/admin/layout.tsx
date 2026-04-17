@@ -3,9 +3,6 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  // A proteção é feita pelo middleware.ts no edge, 
-  // então não haverá piscar de renderização desprotegida.
-
   return (
     <div className="flex flex-col md:flex-row h-screen overflow-hidden bg-slate-50 text-slate-900">
       <Sidebar />

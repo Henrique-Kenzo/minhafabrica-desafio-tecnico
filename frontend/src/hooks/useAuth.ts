@@ -8,8 +8,6 @@ export function useAuth() {
   const router = useRouter();
 
   useEffect(() => {
-    // A proteção agora é feita no middleware.ts, 
-    // hook apenas hidratações de state locais
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
