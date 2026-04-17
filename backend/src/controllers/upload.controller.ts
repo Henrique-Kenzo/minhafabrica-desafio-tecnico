@@ -1,14 +1,36 @@
 import { Request, Response } from 'express';
+import { v2 as cloudinary } from 'cloudinary';
 import { AppError } from '../utils/AppError';
 
-export const uploadImage = (req: Request, res: Response) => {
-  if (!req.file) {
-    throw new AppError('Nenhuma imagem enviada', 400);
+// A configuração pode ficar aqui ou num arquivo separado, mas para simplicidade manteremos aqui
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+  secure: true
+});
+
+export const getUploadSignature = (req: Request, res: Response) => {
+  const timestamp = Math.round(new Date().getTime() / 1000);
+  
+  if (!process.env.CLOUDINARY_API_SECRET) {
+    throw new AppError('Cloudinary não configurado no servidor.', 500);
   }
 
-  // Converte o buffer do arquivo para base64 data URI — salva direto no banco, sem disco
-  const base64 = req.file.buffer.toString('base64');
-  const imageUrl = `data:${req.file.mimetype};base64,${base64}`;
+  // Gera assinatura
+  const signature = cloudinary.utils.api_sign_request(
+    {
+      timestamp,
+      folder: 'minhafabrica_uploads'
+    },
+    process.env.CLOUDINARY_API_SECRET
+  );
 
-  res.json({ imageUrl });
+  res.json({ 
+    signature, 
+    timestamp, 
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME, 
+    apiKey: process.env.CLOUDINARY_API_KEY,
+    folder: 'minhafabrica_uploads'
+  });
 };

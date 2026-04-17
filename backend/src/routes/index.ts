@@ -4,8 +4,7 @@ import { getDashboard } from '../controllers/dashboard.controller';
 import { verifyToken, isAdmin } from '../middlewares/auth.middleware';
 import { findAllUsers, createUser, updateUser, deleteUser } from '../controllers/user.controller';
 import { findAllProducts, createProduct, updateProduct, deleteProduct, getCategories } from '../controllers/product.controller';
-import { uploadImage } from '../controllers/upload.controller';
-import { upload } from '../middlewares/upload.middleware';
+import { getUploadSignature } from '../controllers/upload.controller';
 import { validate } from '../middlewares/validate.middleware';
 import { loginSchema } from '../schemas/auth.schema';
 import { createUserSchema, updateUserSchema } from '../schemas/user.schema';
@@ -25,7 +24,7 @@ router.get('/users', findAllUsers);
 
 router.get('/products', findAllProducts);
 router.get('/products/categories', getCategories);
-router.post('/products/upload', upload.single('image'), uploadImage);
+router.get('/products/upload-signature', getUploadSignature);
 
 router.post('/products', validate(createProductSchema), createProduct);
 router.put('/products/:id', validate(updateProductSchema), updateProduct);
