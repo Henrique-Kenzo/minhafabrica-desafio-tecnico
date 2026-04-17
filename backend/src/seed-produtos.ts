@@ -27,7 +27,7 @@ const generateProducts = () => {
     const modifier = adjectives[Math.floor(Math.random() * adjectives.length)];
     // Adiciona número ao nome para gerar registros únicos e visualmente fáceis de validar paginação
     const name = `${blueprint.baseName} ${modifier} ${Math.floor(Math.random() * 1000)}`;
-    const price = Number((Math.random() * 800 + 49.9).toFixed(2));
+    const price = Math.round(Number((Math.random() * 800 + 49.9).toFixed(2)) * 100);
     const stock = Math.floor(Math.random() * 100) + 5;
     
     products.push({
