@@ -4,7 +4,7 @@ import * as React from 'react';
 import api from '@/services/api';
 import { Button } from '@/components/ui/Button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table';
-import { Modal } from '@/components/ui/Modal';
+import { ProductModal } from '@/components/ui/ProductModal';
 import { Input } from '@/components/ui/Input';
 import { Edit2, Plus, Trash2, Search, Filter, Image as ImageIcon, ChevronLeft, ChevronRight, ChevronDown, X } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
@@ -15,14 +15,8 @@ import { useDebounce } from '@/hooks/useDebounce';
 
 export default function ProductsPage() {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [editingProduct, setEditingProduct] = React.useState<Product | null>(null);
-  const [imageFile, setImageFile] = React.useState<File | null>(null);
   const [deletingIds, setDeletingIds] = React.useState<string[]>([]);
-
-  const [modalPrice, setModalPrice] = React.useState('');
-  const [modalCategory, setModalCategory] = React.useState('');
-  const [isCategoryPickerOpen, setIsCategoryPickerOpen] = React.useState(false);
 
   const [currentPage, setCurrentPage] = React.useState(1);
   const [searchTerm, setSearchTerm] = React.useState('');
@@ -108,90 +102,7 @@ export default function ProductsPage() {
 
   const handleOpenModal = (product?: Product) => {
     setEditingProduct(product || null);
-    if (product?.price) {
-      setModalPrice(product.price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-    } else {
-      setModalPrice('');
-    }
-    setModalCategory(product?.category || '');
     setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setEditingProduct(null);
-    setImageFile(null);
-    setIsCategoryPickerOpen(false);
-  };
-
-  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, '');
-    
-    if (value.length > 14) {
-      value = value.slice(0, 14);
-    }
-
-    if (value === '') {
-      setModalPrice('');
-      return;
-    }
-    
-    value = Number(value).toString();
-    value = value.padStart(3, '0');
-    
-    let decimals = value.slice(-2);
-    let integers = value.slice(0, -2);
-    
-    integers = integers.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-    
-    setModalPrice(integers + ',' + decimals);
-  };
-
-  const handleTextareaInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    e.target.style.height = 'auto';
-    e.target.style.height = `${Math.min(e.target.scrollHeight, 150)}px`;
-  };
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const data = Object.fromEntries(formData.entries());
-    setIsSubmitting(true);
-
-    let uploadedImageUrl = editingProduct?.imageUrl || '';
-
-    try {
-      // Se o usuario selecionou um novo arquivo, faz upload -> backend converte pra base64 e retorna
-      if (imageFile) {
-        const fileData = new FormData();
-        fileData.append('image', imageFile);
-        const uploadRes = await api.post('/products/upload', fileData, { headers: { 'Content-Type': 'multipart/form-data' } });
-        uploadedImageUrl = uploadRes.data.imageUrl;
-      }
-
-      const payload = {
-        ...data,
-        price: Number(modalPrice.replace(/\./g, '').replace(',', '.')),
-        category: modalCategory,
-        stock: Number(data.stock),
-        imageUrl: uploadedImageUrl || undefined,
-      };
-
-      if (editingProduct) {
-        await api.put(`/products/${editingProduct._id}`, payload);
-        toast.success('Produto atualizado!');
-      } else {
-        await api.post('/products', payload);
-        toast.success('Produto criado!');
-      }
-      handleCloseModal();
-      refetch();
-      fetchCategories();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Erro ao processar.');
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   return (
@@ -315,7 +226,7 @@ export default function ProductsPage() {
                     </span>
                   </TableCell>
                   <TableCell className="text-right font-medium">
-                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
+                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price / 100)}
                   </TableCell>
                   <TableCell className="text-right text-slate-500">
                     {product.stock} un.
@@ -375,88 +286,21 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={handleCloseModal} title={editingProduct ? 'Editar Produto' : 'Novo Produto'}>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex items-center gap-4 border border-dashed border-slate-300 p-4 rounded-lg bg-slate-50">
-             <div className="flex-1">
-               <label className="block text-sm font-medium text-slate-700 mb-1">Imagem do Produto (Opcional)</label>
-               <Input 
-                 type="file" 
-                 accept="image/*" 
-                 onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-                 className="text-slate-500 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-               />
-               {editingProduct?.imageUrl && !imageFile && (
-                 <p className="text-xs text-slate-500 mt-2">Imagem atual já enviada.</p>
-               )}
-             </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Nome</label>
-            <Input name="name" required defaultValue={editingProduct?.name} placeholder="Nome do produto" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Descrição</label>
-            <textarea
-              name="description"
-              required
-              defaultValue={editingProduct?.description}
-              placeholder="Descreva o produto"
-              onChange={handleTextareaInput}
-              className="flex min-h-[40px] max-h-[150px] w-full rounded-md border border-slate-200 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-950 resize-none overflow-y-auto"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Preço (R$)</label>
-              <Input value={modalPrice} onChange={handlePriceChange} required placeholder="Ex: 1.682,82" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Estoque</label>
-              <Input name="stock" type="number" min="0" required defaultValue={editingProduct?.stock} placeholder="0" />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Categoria</label>
-            <div className="relative">
-              <Input 
-                value={modalCategory} 
-                onChange={(e) => {
-                  setModalCategory(e.target.value);
-                  setIsCategoryPickerOpen(true);
-                }}
-                onFocus={() => setIsCategoryPickerOpen(true)}
-                onBlur={() => setTimeout(() => setIsCategoryPickerOpen(false), 150)}
-                required 
-                placeholder="Ex: Eletrônicos, Roupas" 
-                className="pr-9"
-              />
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-              {isCategoryPickerOpen && availableCategories.length > 0 && (
-                <div className="absolute z-10 top-full mt-1 w-full bg-white border border-slate-200 rounded-md shadow-lg py-1 max-h-40 overflow-y-auto">
-                  {availableCategories.map(cat => (
-                    <div 
-                      key={cat}
-                      className="px-3 py-2 text-sm cursor-pointer hover:bg-slate-50 text-slate-700"
-                      onMouseDown={(e) => {
-                        e.preventDefault(); 
-                        setModalCategory(cat); 
-                        setIsCategoryPickerOpen(false);
-                      }}
-                    >
-                      {cat}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-          <div className="flex justify-end gap-3 mt-6">
-            <Button type="button" variant="outline" onClick={handleCloseModal} disabled={isLoading}>Cancelar</Button>
-            <Button type="submit" disabled={isLoading}>{isLoading ? 'Salvando...' : 'Salvar'}</Button>
-          </div>
-        </form>
-      </Modal>
+      <ProductModal 
+        isOpen={isModalOpen} 
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingProduct(null);
+        }} 
+        editingProduct={editingProduct} 
+        availableCategories={availableCategories} 
+        onSuccess={() => {
+          setIsModalOpen(false);
+          setEditingProduct(null);
+          refetch();
+          fetchCategories();
+        }} 
+      />
     </div>
   );
 }
