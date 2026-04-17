@@ -3,7 +3,6 @@ import cors from 'cors';
 import 'dotenv/config';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import mongoSanitize from 'express-mongo-sanitize';
 
 
 import apiRoutes from './routes/index';
@@ -15,7 +14,6 @@ const app = express();
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
-app.use(mongoSanitize());
 
 // rate limit para evitar brute force
 const apiLimiter = rateLimit({

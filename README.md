@@ -36,10 +36,10 @@ Escolhi tecnologias consolidadas no ecossistema atual para garantir uma entrega 
   - _Por quê?_ O ecossistema Node com TypeScript fornece tipagem mais segura no fluxo de dados. O Express é uma solução testada para roteamento, e o MongoDB se adequa bem ao escopo e à flexibilidade de modelagem do desafio.
 - **Frontend:** Next.js (App Router) + React 19 + TypeScript + Tailwind CSS v4
   - _Por quê?_ O Next.js agiliza a construção de painéis fornecendo roteamento e organização nativa clara. O Tailwind CSS facilita a criação de interfaces responsivas de forma prática e coesa.
-- **Segurança:** JWT, express-rate-limit, Helmet e express-mongo-sanitize
-  - _Por quê?_ Implementei middlewares de segurança básicos para reduzir riscos comuns como brute force e injeções maliciosas nos inputs (ex: NoSQL Injection).
+- **Segurança:** JWT, express-rate-limit e Helmet
+  - _Por quê?_ Implementei middlewares de segurança básicos para proteger as rotas, garantir headers HTTP seguros e reduzir riscos severos na rede como ataques de força bruta (brute force).
 - **Validação & Testes:** Zod e Jest + Supertest
-  - _Por quê?_ O Zod garante que os dados obedeçam ao formato esperado. Utilizei Jest e Supertest para validar o comportamento das rotas críticas e reduzir regressões.
+  - _Por quê?_ A validação cirúrgica com Zod barra dados sujos e mitiga diretamente injeções maliciosas nos inputs (ex: NoSQL Injection). Utilizei Jest e Supertest para validar o comportamento das rotas críticas e reduzir regressões.
 
 ---
 
