@@ -9,7 +9,9 @@ export const validate = (schema: ZodSchema) => {
     } catch (error) {
       if (error instanceof ZodError) {
         // Formata os erros do Zod para algo mais legível
-        const messages = (error as any).errors.map((e: any) => `${e.path.join('.')}: ${e.message}`);
+        const errObj = error as any;
+        const mappedErrors = errObj.issues || errObj.errors || [];
+        const messages = mappedErrors.map((e: any) => `${e.path ? e.path.join('.') : 'campo'}: ${e.message}`);
         res.status(400).json({ 
           message: 'Erro de validação de dados', 
           details: messages 

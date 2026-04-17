@@ -40,12 +40,19 @@ export class AuthService {
     if (existing) return { message: 'Usuário admin já existe' };
 
     const hashed = await hashPassword(adminPass);
-    await this.userRepo.create({
-      name: adminName,
-      email: adminEmail,
-      password: hashed,
-      profile: 'admin',
-    });
-    return { message: 'Seed realizado com sucesso' };
+    try {
+      await this.userRepo.create({
+        name: adminName,
+        email: adminEmail,
+        password: hashed,
+        profile: 'admin',
+      });
+      return { message: 'Seed realizado com sucesso' };
+    } catch (error: any) {
+      if (error && error.code === 11000) {
+        return { message: 'Usuário admin já existe' };
+      }
+      throw error;
+    }
   }
 }
