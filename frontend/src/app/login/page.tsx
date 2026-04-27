@@ -11,7 +11,26 @@ import { Factory } from 'lucide-react';
 export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isSlow, setIsSlow] = React.useState(false);
+  const [serverReady, setServerReady] = React.useState(false);
   const [errors, setErrors] = React.useState<{ email?: string; password?: string }>({});
+
+  // Warm-up: pinga o backend assim que a página carrega pra acordar o Render
+  React.useEffect(() => {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+    const healthUrl = baseUrl.replace(/\/api\/v1\/?$/, '/health');
+
+    fetch(healthUrl, { method: 'GET', mode: 'cors' })
+      .then(() => setServerReady(true))
+      .catch(() => {
+        // Se falhar, tenta de novo em 3s
+        setTimeout(() => {
+          fetch(healthUrl, { method: 'GET', mode: 'cors' })
+            .then(() => setServerReady(true))
+            .catch(() => {}); // silencioso
+        }, 3000);
+      });
+  }, []);
 
   const validate = (email: string, password: string) => {
     const errs: typeof errors = {};
@@ -32,6 +51,11 @@ export default function LoginPage() {
     if (Object.keys(errs).length > 0) return;
 
     setIsLoading(true);
+    setIsSlow(false);
+
+    // Se demorar mais de 3s, mostra mensagem amigável
+    const slowTimer = setTimeout(() => setIsSlow(true), 3000);
+
     try {
       const response = await api.post('/auth/login', { email, password });
       const { token, user } = response.data;
@@ -45,7 +69,9 @@ export default function LoginPage() {
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Erro ao realizar login.');
     } finally {
+      clearTimeout(slowTimer);
       setIsLoading(false);
+      setIsSlow(false);
     }
   };
 
@@ -113,6 +139,22 @@ export default function LoginPage() {
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? 'Entrando...' : 'Entrar'}
           </Button>
+
+          {isSlow && (
+            <div className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-700">
+              <svg className="h-4 w-4 animate-spin flex-shrink-0" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              <span>Servidor iniciando... isso pode levar alguns segundos na primeira vez.</span>
+            </div>
+          )}
+
+          {!serverReady && !isLoading && (
+            <p className="text-center text-xs text-slate-400">
+              ⏳ Conectando ao servidor...
+            </p>
+          )}
         </form>
       </div>
     </div>

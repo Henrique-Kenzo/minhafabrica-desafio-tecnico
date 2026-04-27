@@ -10,6 +10,11 @@ import { globalErrorHandler } from './middlewares/error.middleware';
 
 const app = express();
 
+// Health check — fora do rate limiter p/ keep-alive do Render
+app.get('/health', (_req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
